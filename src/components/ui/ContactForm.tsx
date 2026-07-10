@@ -1,36 +1,27 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import emailjs from "@emailjs/browser";
 import { Send } from "lucide-react";
-
-type Status = "idle" | "sending" | "success" | "error";
+import { org } from "@/content/org";
 
 export function ContactForm() {
-  const [status, setStatus] = useState<Status>("idle");
+  const [sent, setSent] = useState(false);
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setStatus("sending");
 
-    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
-    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const message = formData.get("message") as string;
 
-    if (!serviceId || !templateId || !publicKey) {
-      console.error("Missing EmailJS environment variables");
-      setStatus("error");
-      return;
-    }
+    const subject = encodeURIComponent(`Message from ${name} — IFE Website`);
+    const body = encodeURIComponent(
+      `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
+    );
 
-    try {
-      await emailjs.sendForm(serviceId, templateId, e.currentTarget, publicKey);
-      setStatus("success");
-      e.currentTarget.reset();
-    } catch (err) {
-      console.error(err);
-      setStatus("error");
-    }
+    window.location.href = `mailto:${org.email}?subject=${subject}&body=${body}`;
+    setSent(true);
   }
 
   return (
@@ -76,23 +67,22 @@ export function ContactForm() {
 
       <button
         type="submit"
-        disabled={status === "sending"}
-        className="inline-flex items-center gap-2 rounded-full bg-ife-red px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="inline-flex items-center gap-2 rounded-full bg-ife-red px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
         <Send className="h-4 w-4" />
-        {status === "sending" ? "Sending..." : "Send Message"}
+        Send Message
       </button>
 
-      {status === "success" && (
+      {sent && (
         <p className="text-sm font-medium text-ife-green-deep">
-          Message sent  we&apos;ll get back to you soon.
+          Your email app should now be open with the message ready to send.
         </p>
       )}
-      {status === "error" && (
-        <p className="text-sm font-medium text-ife-red">
-          Something went wrong. Please try again or reach us on WhatsApp.
-        </p>
-      )}
+
+      <p className="text-xs text-ife-grey">
+        This opens your email app with the message pre-filled, just hit send
+        from there.
+      </p>
     </form>
   );
 }
